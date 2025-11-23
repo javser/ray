@@ -1,117 +1,175 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <title>Ray Tracing</title>
+    <meta charset="UTF-8">
+    <title>2D Ray Tracing JS Touch Control</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <link rel="manifest" href="manifest.json">
     <style>
         body {
             margin: 0;
             overflow: hidden;
+            background-color: #000;
         }
         canvas {
             display: block;
-            width: 100%;
-            height: 100%;
+            background-color: #000;
+            cursor: crosshair;
         }
     </style>
 </head>
 <body>
-    <canvas id="canvas"></canvas>
+    <canvas id="rayTracingCanvas"></canvas>
     <script>
-        const canvas = document.getElementById('canvas');
+        const canvas = document.getElementById('rayTracingCanvas');
         const ctx = canvas.getContext('2d');
-        
-        // Устанавливаем размер canvas в соответствии с окном
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            centerX = canvas.width / 2;
-            centerY = canvas.height / 2;
-        }
-        resizeCanvas();
-        window.addEventListener('resize', resizeCanvas);
+        const FOV = 160; 
+        let viewDirectionAngle = 45;
+        let width, height, centerX, centerY;
+        const objects = [];
+        const MAX_VISION_DISTANCE = 250;
+        const CLEAR_VISION_DISTANCE = 50; 
+        const MAX_RAY_OPACITY = 0.7; 
+        const NUM_RAYS = 256;
 
-        const centerX = canvas.width / 2;
-        const centerY = canvas.height / 2;
-        const angle = 160 * Math.PI / 180; // угол в радианах
-        const delay = 100; // задержка в мс
-        let rays = [];
-        let running = false;
-
-        // Создаем черный фон
-        ctx.fillStyle = 'black';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // Создание объекта для хранения информации о луче
-        function Ray(angle) {
-            this.angle = angle;
-            this.x = centerX;
-            this.y = centerY;
-            this.lastX = centerX;
-            this.lastY = centerY;
-            this.alive = true;
+        function setCanvasSize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            centerX = width / 2;
+            centerY = height / 2;
+            objects.length = 0;
+            objects.push({ x: width * 0.25, y: height * 0.25, w: 50, h: 200, color: [0, 0, 255] });
+            objects.push({ x: width * 0.75, y: height * 0.6, w: 100, h: 50, color: [0, 255, 0] });
         }
 
-        Ray.prototype.update = function() {
-            this.lastX = this.x;
-            this.lastY = this.y;
-            this.x += Math.cos(this.angle) * 5;
-            this.y += Math.sin(this.angle) * 5;
-
-            if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) {
-                this.alive = false;
-                return;
-            }
-
-            if (this.x < 0 || this.x > canvas.width) {
-                this.angle = Math.PI - this.angle;
-            }
-            if (this.y < 0 || this.y > canvas.height) {
-                this.angle = -this.angle;
-            }
-        };
-
-        Ray.prototype.draw = function() {
-            ctx.beginPath();
-            ctx.moveTo(this.lastX, this.lastY);
-            ctx.lineTo(this.x, this.y);
-            ctx.strokeStyle = 'rgba(128, 128, 128, 0.5)';
-            ctx.stroke();
-
-            ctx.fillStyle = 'white';
-            ctx.fillRect(this.x, this.y, 1, 1);
-        };
-
-        function createRay() {
-            const angle = Math.random() * angle - angle / 2;
-            rays.push(new Ray(angle));
+        function drawPixel(x, y, color) {
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y, 1, 1);
         }
 
-        function update() {
-            if (!running) return;
+        function traceRay(angle) {
+            let x = centerX;
+            let y = centerY;
+            const rad = angle * Math.PI / 180;
+            const dx = Math.cos(rad);
+            const dy = Math.sin(rad);
+            let hitObject = null;
             
-            ctx.fillStyle = 'black';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            for (let i = rays.length - 1; i >= 0; i--) {
-                const ray = rays[i];
-                ray.update();
-                ray.draw();
-                
-                if (!ray.alive) {
-                    rays.splice(i, 1);
+            for (let i = 0; i < MAX_VISION_DISTANCE; i++) {
+                x += dx;
+                y += dy;
+                const distance = i;
+                const floorX = Math.floor(x);
+                const floorY = Math.floor(y);
+
+                if (distance > MAX_VISION_DISTANCE || floorX < 0 || floorX >= width || floorY < 0 || floorY >= height) {
+                    break;
                 }
+
+                for (const obj of objects) {
+                    if (x > obj.x && x < obj.x + obj.w && y > obj.y && y < obj.y + obj.h) {
+                        hitObject = obj;
+                        break;
+                    }
+                }
+
+                if (hitObject) {
+                    drawHitPoint(x, y, distance, hitObject.color);
+                    break;
+                }
+
+                drawRayPathPixel(x, y, distance);
             }
-            
-            requestAnimationFrame(update);
+        }
+        
+        function drawRayPathPixel(x, y, distance) {
+            let opacity = MAX_RAY_OPACITY; 
+            if (distance > CLEAR_VISION_DISTANCE) {
+                const attenuation = (distance - CLEAR_VISION_DISTANCE) / (MAX_VISION_DISTANCE - CLEAR_VISION_DISTANCE);
+                opacity = MAX_RAY_OPACITY * (1 - attenuation);
+            }
+            if (opacity > 0) {
+                drawPixel(Math.floor(x), Math.floor(y), `rgba(255, 255, 0, ${opacity})`);
+            }
         }
 
-        function start() {
-            running = true;
-            setInterval(createRay, delay);
-            update();
+        function drawHitPoint(x, y, distance, objectColor) {
+            let lightIntensity = 1.0; 
+            if (distance > CLEAR_VISION_DISTANCE) {
+                const attenuation = (distance - CLEAR_VISION_DISTANCE) / (MAX_VISION_DISTANCE - CLEAR_VISION_DISTANCE);
+                lightIntensity = 1.0 * (1 - attenuation);
+            }
+
+            if (lightIntensity > 0) {
+                const finalR = Math.min(255, objectColor[0] * lightIntensity + 255 * lightIntensity);
+                const finalG = Math.min(255, objectColor[1] * lightIntensity + 255 * lightIntensity);
+                const finalB = Math.min(255, objectColor[2] * lightIntensity + 0 * lightIntensity);
+                drawPixel(Math.floor(x), Math.floor(y), `rgba(${finalR}, ${finalG}, ${finalB}, 1.0)`);
+            }
         }
 
-        start();
+        function drawObjects() {}
+        
+        function renderScene() {
+            ctx.clearRect(0, 0, width, height); 
+            drawObjects();
+            const startAngle = viewDirectionAngle - FOV / 2;
+            const angleStep = FOV / (NUM_RAYS - 1);
+
+            for (let i = 0; i < NUM_RAYS; i++) {
+                const angle = startAngle + i * angleStep;
+                traceRay(angle);
+            }
+        }
+
+        function handleMove(clientX, clientY) {
+            const dx = clientX - centerX;
+            const dy = clientY - centerY;
+            const angleRad = Math.atan2(dy, dx);
+            let targetAngle = angleRad * 180 / Math.PI;
+            const smoothing = 0.1;
+            viewDirectionAngle += (targetAngle - viewDirectionAngle) * smoothing;
+        }
+        
+        canvas.addEventListener('mousemove', (event) => {
+            handleMove(event.clientX, event.clientY);
+        });
+
+        canvas.addEventListener('touchmove', (event) => {
+            if (event.touches.length > 0) {
+                handleMove(event.touches[0].clientX, event.touches[0].clientY);
+            }
+        });
+
+        function gameLoop() {
+            renderScene();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function initializeScene() {
+            setCanvasSize();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // --- Регистрация Service Worker ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js').then(registration => {
+                    console.log('Service Worker registered: ', registration.scope);
+                }).catch(err => {
+                    console.error('Service Worker registration failed: ', err);
+                });
+            });
+        }
+        // --- Конец регистрации Service Worker ---
+
+        initializeScene();
+
+        window.addEventListener('resize', () => {
+            setCanvasSize();
+        });
     </script>
 </body>
 </html>
