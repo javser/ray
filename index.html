@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Ray Tracing Example</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="rayCanvas"></canvas>
+
+    <script>
+        // Получаем canvas и контекст
+        const canvas = document.getElementById('rayCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Устанавливаем размер canvas
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        // Класс для работы с векторами
+        class Vector3 {
+            constructor(x, y, z) {
+                this.x = x;
+                this.y = y;
+                this.z = z;
+            }
+            
+            add(v) {
+                return new Vector3(this.x + v.x, this.y + v.y, this.z + v.z);
+            }
+            
+            multiply(s) {
+                return new Vector3(this.x * s, this.y * s, this.z * s);
+            }
+        }
+
+        // Основная функция рендеринга
+        function render() {
+            // Очищаем canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Пример простой трассировки
+            for (let y = 0; y < canvas.height; y++) {
+                for (let x = 0; x < canvas.width; x++) {
+                    // Создаем луч из камеры
+                    const ray = new Vector3(
+                        (x - canvas.width / 2) / 100,
+                        (y - canvas.height / 2) / 100,
+                        1
+                    );
+                    
+                    // Простой расчет цвета (пример)
+                    const color = new Vector3(
+                        Math.abs(ray.x) * 255,
+                        Math.abs(ray.y) * 255,
+                        Math.abs(ray.z) * 255
+                    );
+                    
+                    // Устанавливаем пиксель
+                    ctx.fillStyle = `rgb(${color.x}, ${color.y}, ${color.z})`;
+                    ctx.fillRect(x, y, 1, 1);
+                }
+            }
+        }
+
+        // Запускаем рендеринг
+        render();
+
+        // Добавляем обработчик изменения размера окна
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            render();
+        });
+    </script>
+</body>
+</html>
