@@ -65,11 +65,41 @@
             return false;
         }
         
+        // Угол обзора
+        const fov = Math.PI * 160 / 180;
+        let currentAngle = 0;
+        
+        // Отрисовка направления взгляда
+        function drawViewDirection() {
+            const angle1 = currentAngle - fov / 2;
+            const angle2 = currentAngle + fov / 2;
+            
+            ctx.beginPath();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = 'white';
+            
+            // Первая линия
+            ctx.moveTo(camera.x, camera.y);
+            ctx.lineTo(
+                camera.x + 30 * Math.cos(angle1),
+                camera.y + 30 * Math.sin(angle1)
+            );
+            
+            // Вторая линия
+            ctx.moveTo(camera.x, camera.y);
+            ctx.lineTo(
+                camera.x + 30 * Math.cos(angle2),
+                camera.y + 30 * Math.sin(angle2)
+            );
+            
+            ctx.stroke();
+        }
+        
         // Отрисовка лучей
-        let angle = 0;
         function drawRays() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawBorder();
+            drawViewDirection();
             
             // Рисуем квадраты
             squares.forEach(square => {
@@ -79,42 +109,23 @@
             
             // Рассчитываем направление луча
             const direction = {
-                x: Math.cos(angle) * 100,
-                y: Math.sin(angle) * 100
+                x: Math.cos(currentAngle),
+                y: Math.sin(currentAngle)
             };
+            
+            // Отрисовка следа
+            ctx.globalAlpha = 0.2;
+            ctx.fillStyle = 'gray';
+            ctx.beginPath();
+            ctx.arc(
+                camera.x + direction.x * 10,
+                camera.y + direction.y * 10,
+                1,
+                0,
+                Math.PI * 2
+            );
+            ctx.fill();
             
             // Проверяем пересечение с квадратами
             let hit = false;
-            squares.forEach(square => {
-                if (checkIntersection({
-                    x: camera.x + direction.x,
-                    y: camera.y + direction.y
-                }, square)) {
-                    hit = true;
-                    ctx.fillStyle = 'white';
-                    ctx.fillRect(
-                        camera.x + direction.x,
-                        camera.y + direction.y,
-                        1, 1
-                    );
-                }
-            });
-            
-            angle += 0.01;
-            if (angle > 2 * Math.PI) angle = 0;
-            
-            setTimeout(drawRays, 200);
-        }
-        
-        drawRays();
-
-        // Обработка изменения размера окна
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            camera.x = canvas.width / 2;
-            camera.y = canvas.height / 2;
-        });
-    </script>
-</body>
-</html>
+            squares
