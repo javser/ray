@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Ray Tracing Example</title>
+    <title>2D Ray Tracing</title>
     <style>
         body {
             margin: 0;
@@ -24,61 +24,89 @@
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         
-        // Позиция камеры
+        // Камера в центре
         const camera = {
             x: canvas.width / 2,
             y: canvas.height / 2
         };
         
-        // Угол обзора
-        const fov = Math.PI * 160 / 180; // 160 градусов
-        
-        // Массив для хранения обработанных пикселей
-        let processedPixels = [];
-        
-        // Функция для расчета направления луча
-        function getRayDirection(x, y) {
-            const aspect = canvas.width / canvas.height;
-            const horizontalFov = fov * aspect;
-            
-            const xOffset = (x - camera.x) * (horizontalFov / canvas.width);
-            const yOffset = (y - camera.y) * (fov / canvas.height);
-            
-            return {
-                x: xOffset,
-                y: yOffset
-            };
+        // Создаем случайные квадраты
+        const squares = [];
+        for (let i = 0; i < 10; i++) {
+            squares.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                width: Math.random() * 100 + 50,
+                height: Math.random() * 100 + 50
+            });
         }
         
-        // Функция отрисовки одного луча
-        function drawRay() {
-            if (processedPixels.length >= canvas.width * canvas.height) return;
+        // Отрисовка границ canvas
+        function drawBorder() {
+            ctx.beginPath();
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = 'white';
+            ctx.rect(0, 0, canvas.width, canvas.height);
+            ctx.stroke();
+        }
+        
+        // Проверка пересечения луча с квадратом
+        function checkIntersection(ray, square) {
+            const { x, y, width, height } = square;
+            const left = x;
+            const right = x + width;
+            const top = y;
+            const bottom = y + height;
             
-            // Выбираем случайный пиксель
-            let x, y;
-            do {
-                x = Math.floor(Math.random() * canvas.width);
-                y = Math.floor(Math.random() * canvas.height);
-            } while (processedPixels.includes(x * canvas.width + y));
-            
-            processedPixels.push(x * canvas.width + y);
-            
-            // Получаем направление луча
-            const direction = getRayDirection(x, y);
-            
-            // Проверяем, попадает ли луч в границы угла обзора
-            if (Math.abs(direction.x) < Math.tan(fov / 2) && 
-                Math.abs(direction.y) < Math.tan(fov / 2)) {
-                ctx.fillStyle = 'white';
-                ctx.fillRect(x, y, 1, 1);
+            // Проверяем пересечение с каждой стороной
+            if (ray.x >= left && ray.x <= right && ray.y >= top && ray.y <= bottom) {
+                return true;
             }
-            
-            // Запланируем следующий кадр через 200мс
-            setTimeout(drawRay, 200);
+            return false;
         }
         
-        // Начинаем отрисовку
-        drawRay();
+        // Отрисовка лучей
+        let angle = 0;
+        function drawRays() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBorder();
+            
+            // Рисуем квадраты
+            squares.forEach(square => {
+                ctx.fillStyle = 'gray';
+                ctx.fillRect(square.x, square.y, square.width, square.height);
+            });
+            
+            // Рассчитываем направление луча
+            const direction = {
+                x: Math.cos(angle) * 100,
+                y: Math.sin(angle) * 100
+            };
+            
+            // Проверяем пересечение с квадратами
+            let hit = false;
+            squares.forEach(square => {
+                if (checkIntersection({
+                    x: camera.x + direction.x,
+                    y: camera.y + direction.y
+                }, square)) {
+                    hit = true;
+                    ctx.fillStyle = 'white';
+                    ctx.fillRect(
+                        camera.x + direction.x,
+                        camera.y + direction.y,
+                        1, 1
+                    );
+                }
+            });
+            
+            angle += 0.01;
+            if (angle > 2 * Math.PI) angle = 0;
+            
+            setTimeout(drawRays, 200);
+        }
+        
+        drawRays();
 
         // Обработка изменения размера окна
         window.addEventListener('resize', () => {
@@ -86,8 +114,6 @@
             canvas.height = window.innerHeight;
             camera.x = canvas.width / 2;
             camera.y = canvas.height / 2;
-            processedPixels = [];
-            drawRay();
         });
     </script>
 </body>
