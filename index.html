@@ -7,6 +7,7 @@
         body {
             margin: 0;
             overflow: hidden;
+            background: black;
         }
         canvas {
             display: block;
@@ -17,68 +18,76 @@
     <canvas id="rayCanvas"></canvas>
 
     <script>
-        // Получаем canvas и контекст
         const canvas = document.getElementById('rayCanvas');
         const ctx = canvas.getContext('2d');
         
-        // Устанавливаем размер canvas
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         
-        // Класс для работы с векторами
-        class Vector3 {
-            constructor(x, y, z) {
-                this.x = x;
-                this.y = y;
-                this.z = z;
-            }
+        // Позиция камеры
+        const camera = {
+            x: canvas.width / 2,
+            y: canvas.height / 2
+        };
+        
+        // Угол обзора
+        const fov = Math.PI * 160 / 180; // 160 градусов
+        
+        // Массив для хранения обработанных пикселей
+        let processedPixels = [];
+        
+        // Функция для расчета направления луча
+        function getRayDirection(x, y) {
+            const aspect = canvas.width / canvas.height;
+            const horizontalFov = fov * aspect;
             
-            add(v) {
-                return new Vector3(this.x + v.x, this.y + v.y, this.z + v.z);
-            }
+            const xOffset = (x - camera.x) * (horizontalFov / canvas.width);
+            const yOffset = (y - camera.y) * (fov / canvas.height);
             
-            multiply(s) {
-                return new Vector3(this.x * s, this.y * s, this.z * s);
-            }
+            return {
+                x: xOffset,
+                y: yOffset
+            };
         }
-
-        // Основная функция рендеринга
-        function render() {
-            // Очищаем canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Функция отрисовки одного луча
+        function drawRay() {
+            if (processedPixels.length >= canvas.width * canvas.height) return;
             
-            // Пример простой трассировки
-            for (let y = 0; y < canvas.height; y++) {
-                for (let x = 0; x < canvas.width; x++) {
-                    // Создаем луч из камеры
-                    const ray = new Vector3(
-                        (x - canvas.width / 2) / 100,
-                        (y - canvas.height / 2) / 100,
-                        1
-                    );
-                    
-                    // Простой расчет цвета (пример)
-                    const color = new Vector3(
-                        Math.abs(ray.x) * 255,
-                        Math.abs(ray.y) * 255,
-                        Math.abs(ray.z) * 255
-                    );
-                    
-                    // Устанавливаем пиксель
-                    ctx.fillStyle = `rgb(${color.x}, ${color.y}, ${color.z})`;
-                    ctx.fillRect(x, y, 1, 1);
-                }
+            // Выбираем случайный пиксель
+            let x, y;
+            do {
+                x = Math.floor(Math.random() * canvas.width);
+                y = Math.floor(Math.random() * canvas.height);
+            } while (processedPixels.includes(x * canvas.width + y));
+            
+            processedPixels.push(x * canvas.width + y);
+            
+            // Получаем направление луча
+            const direction = getRayDirection(x, y);
+            
+            // Проверяем, попадает ли луч в границы угла обзора
+            if (Math.abs(direction.x) < Math.tan(fov / 2) && 
+                Math.abs(direction.y) < Math.tan(fov / 2)) {
+                ctx.fillStyle = 'white';
+                ctx.fillRect(x, y, 1, 1);
             }
+            
+            // Запланируем следующий кадр через 200мс
+            setTimeout(drawRay, 200);
         }
+        
+        // Начинаем отрисовку
+        drawRay();
 
-        // Запускаем рендеринг
-        render();
-
-        // Добавляем обработчик изменения размера окна
+        // Обработка изменения размера окна
         window.addEventListener('resize', () => {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            render();
+            camera.x = canvas.width / 2;
+            camera.y = canvas.height / 2;
+            processedPixels = [];
+            drawRay();
         });
     </script>
 </body>
