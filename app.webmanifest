@@ -3,16 +3,18 @@
     "short_name": "Ray Tracing",
     "description": "A 2D ray tracing visualization with touch and mouse control.",
     "display": "standalone",
-  "dir": "ltr",
+  "id": "ray",
   "orientation": "portrait",
-  "start_url": ".",
-  "categories": [
-    "game"
-  ],
+  "start_url": "/",
   "scope": "/",
   "background_color": "#000000",
   "theme_color": "#000000",
     "icons": [
+{
+"src": "https://placehold.net/8-48x48.png",
+            "sizes": "48x48",
+            "type": "image/png"
+},
         {
             "src": "https://placehold.net/8-192x192.png",
             "sizes": "192x192",
