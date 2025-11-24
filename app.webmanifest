@@ -3,9 +3,16 @@
     "short_name": "Ray",
     "description": "A 2D ray tracing visualization with touch and mouse control.",
     "display": "standalone",
-  "id": "ray",
-  "orientation": "portrait",
-  "start_url": "/",
+    "id": "ray-11",
+    "start_url": "/?source=pwa",
+    "display": "standalone",
+    "display_override": ["tabbed"],
+    "tab_strip": {
+      "new_tab_button": {
+        "url": "/"
+      }
+    },
+    "orientation": "portrait",
   "scope": "/",
   "background_color": "#000000",
   "theme_color": "#000000",
