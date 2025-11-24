@@ -1,6 +1,6 @@
 {
-    "name": "2D Ray Tracing Demo",
-    "short_name": "Ray Tracing",
+    "name": "2D Ray",
+    "short_name": "Ray",
     "description": "A 2D ray tracing visualization with touch and mouse control.",
     "display": "standalone",
   "id": "ray",
